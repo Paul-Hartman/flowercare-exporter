@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -53,14 +52,16 @@ type Sensor struct {
 	MinLightLux  int    `json:"parameter.min_light_lux"`
 }
 
-func readSensorsFromDir(dirPath string) ([]Sensor, error) {
+func readSensorsFromDir(dirPath string, log logrus.FieldLogger) ([]Sensor, error) {
 	var sensors []Sensor
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return nil, err
 	}
 	for _, entry := range entries {
+		log.Printf("Entry: %s", entry)
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
+			log.Printf("opening: %s", entry.Name())
 			filePath := filepath.Join(dirPath, entry.Name())
 			fileBytes, err := os.ReadFile(filePath)
 			if err != nil {
@@ -73,6 +74,7 @@ func readSensorsFromDir(dirPath string) ([]Sensor, error) {
 				continue
 			}
 			sensors = append(sensors, sensor)
+			log.Print(sensor)
 		}
 	}
 	return sensors, nil
@@ -133,6 +135,7 @@ type Config struct {
 	RefreshTimeout  time.Duration
 	StaleDuration   time.Duration
 	Retry           RetryConfig
+	SensorDir       string
 }
 
 type RetryConfig struct {
@@ -146,6 +149,7 @@ func Parse(log logrus.FieldLogger) (Config, error) {
 		LogLevel:        LogLevel(logrus.InfoLevel),
 		ListenAddr:      ":9294",
 		Device:          "hci0",
+		SensorDir:       "internal/config/sensorData",
 		RefreshDuration: 2 * time.Minute,
 		RefreshTimeout:  time.Minute,
 		StaleDuration:   5 * time.Minute,
@@ -158,10 +162,12 @@ func Parse(log logrus.FieldLogger) (Config, error) {
 
 	// if sensordir flag is passed in at runtime, use readSensorsFromDir to populate results.Sensors with that directory's contents
 	// otherwise use the sensors passed in using the -s flag
-	sensordir := ""
-	pflag.StringVarP(&sensordir, "sensordir", "d", sensordir, "Directory containing sensor JSON files.")
-	if len(sensordir) != 0 {
-		sensors, err := readSensorsFromDir(sensordir)
+	pflag.StringVarP(&result.SensorDir, "sensordir", "z", result.SensorDir, "Directory containing sensor JSON files.")
+	log.Printf("sensordir: %s", result.SensorDir)
+	if len(result.SensorDir) != 0 {
+		log.Infof("sensor directory: %s", result.SensorDir)
+
+		sensors, err := readSensorsFromDir(result.SensorDir, log)
 		if err != nil {
 			log.Fatalf("Error reading sensors from directory: %s", err)
 		}
