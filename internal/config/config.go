@@ -44,12 +44,41 @@ func (s *SensorList) Set(value string) error {
 type Sensor struct {
 	Name         string `json:"name"`
 	MacAddress   string `json:"sensor"`
-	MaxSoilMoist int    `json:"parameter.max_soil_moist"`
-	MinSoilMoist int    `json:"parameter.min_soil_moist"`
-	MaxSoilEc    int    `json:"parameter.max_soil_ec"`
-	MinSoilEc    int    `json:"parameter.min_soil_ec"`
-	MaxLightLux  int    `json:"parameter.max_light_lux"`
-	MinLightLux  int    `json:"parameter.min_light_lux"`
+	MaxSoilMoist int    `json:"-"`
+	MinSoilMoist int    `json:"-"`
+	MaxSoilEc    int    `json:"-"`
+	MinSoilEc    int    `json:"-"`
+	MaxLightLux  int    `json:"-"`
+	MinLightLux  int    `json:"-"`
+}
+
+func (s *Sensor) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		Name       string `json:"name"`
+		MacAddress string `json:"sensor"`
+		Parameter  struct {
+			MaxSoilMoist int `json:"max_soil_moist"`
+			MinSoilMoist int `json:"min_soil_moist"`
+			MaxSoilEc    int `json:"max_soil_ec"`
+			MinSoilEc    int `json:"min_soil_ec"`
+			MaxLightLux  int `json:"max_light_lux"`
+			MinLightLux  int `json:"min_light_lux"`
+		} `json:"parameter"`
+	}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+
+	s.Name = raw.Name
+	s.MacAddress = raw.MacAddress
+	s.MaxSoilMoist = raw.Parameter.MaxSoilMoist
+	s.MinSoilMoist = raw.Parameter.MinSoilMoist
+	s.MaxSoilEc = raw.Parameter.MaxSoilEc
+	s.MinSoilEc = raw.Parameter.MinSoilEc
+	s.MaxLightLux = raw.Parameter.MaxLightLux
+	s.MinLightLux = raw.Parameter.MinLightLux
+
+	return nil
 }
 
 func readSensorsFromDir(dirPath string, log logrus.FieldLogger) ([]Sensor, error) {
@@ -69,12 +98,11 @@ func readSensorsFromDir(dirPath string, log logrus.FieldLogger) ([]Sensor, error
 				continue
 			}
 			var sensor Sensor
-			if err := json.Unmarshal(fileBytes, &sensor); err != nil {
+			if err := sensor.UnmarshalJSON(fileBytes); err != nil {
 				log.Printf("Error unmarshalling JSON from file %s: %v", filePath, err)
 				continue
 			}
 			sensors = append(sensors, sensor)
-			log.Print(sensor)
 		}
 	}
 	return sensors, nil
