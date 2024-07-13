@@ -1,8 +1,12 @@
 package config
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -39,8 +43,39 @@ func (s *SensorList) Set(value string) error {
 }
 
 type Sensor struct {
-	Name       string
-	MacAddress string
+	Name         string `json:"name"`
+	MacAddress   string `json:"sensor"`
+	MaxSoilMoist int    `json:"parameter.max_soil_moist"`
+	MinSoilMoist int    `json:"parameter.min_soil_moist"`
+	MaxSoilEc    int    `json:"parameter.max_soil_ec"`
+	MinSoilEc    int    `json:"parameter.min_soil_ec"`
+	MaxLightLux  int    `json:"parameter.max_light_lux"`
+	MinLightLux  int    `json:"parameter.min_light_lux"`
+}
+
+func readSensorsFromDir(dirPath string) ([]Sensor, error) {
+	var sensors []Sensor
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		return nil, err
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
+			filePath := filepath.Join(dirPath, entry.Name())
+			fileBytes, err := os.ReadFile(filePath)
+			if err != nil {
+				log.Printf("Error reading file %s: %v", filePath, err)
+				continue
+			}
+			var sensor Sensor
+			if err := json.Unmarshal(fileBytes, &sensor); err != nil {
+				log.Printf("Error unmarshalling JSON from file %s: %v", filePath, err)
+				continue
+			}
+			sensors = append(sensors, sensor)
+		}
+	}
+	return sensors, nil
 }
 
 func (s Sensor) String() string {
@@ -120,10 +155,21 @@ func Parse(log logrus.FieldLogger) (Config, error) {
 			Factor:      2,
 		},
 	}
+	// if sensordir flag is passed in at runtime, use readSensorsFromDir to populate results.Sensors with that directory's contents
+	// otherwise use the sensors passed in using the -s flag
+	sensordir := pflag.String("sensordir", "d", "Directory containing sensor JSON files.")
+	if sensordir != nil {
+		sensors, err := readSensorsFromDir(*sensordir)
+		if err != nil {
+			log.Fatalf("Error reading sensors from directory: %s", err)
+		}
+		result.Sensors = sensors
+	} else {
+		pflag.VarP(&result.Sensors, "sensor", "s", "MAC-address of sensor to collect data from. Can be specified multiple times.")
 
+	}
 	pflag.Var(&result.LogLevel, "log-level", "Minimum log level to show.")
 	pflag.StringVarP(&result.ListenAddr, "addr", "a", result.ListenAddr, "Address to listen on for connections.")
-	pflag.VarP(&result.Sensors, "sensor", "s", "MAC-address of sensor to collect data from. Can be specified multiple times.")
 	pflag.StringVarP(&result.Device, "adapter", "i", result.Device, "Bluetooth device to use for communication.")
 	pflag.DurationVarP(&result.RefreshDuration, "refresh-duration", "r", result.RefreshDuration, "Interval used for refreshing data from bluetooth devices.")
 	pflag.DurationVar(&result.RefreshTimeout, "refresh-timeout", result.RefreshTimeout, "Timeout for reading data from a sensor.")

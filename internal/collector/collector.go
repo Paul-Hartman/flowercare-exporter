@@ -1,6 +1,7 @@
 package collector
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -18,9 +19,16 @@ const (
 )
 
 var (
+	// Extend varLabelNames with new label names based on Sensor struct fields
 	varLabelNames = []string{
 		"macaddress",
 		"name",
+		"max_soil_moist",
+		"min_soil_moist",
+		"max_soil_ec",
+		"min_soil_ec",
+		"max_light_lux",
+		"min_light_lux",
 	}
 
 	upDesc = prometheus.NewDesc(
@@ -34,7 +42,7 @@ var (
 	infoDesc = prometheus.NewDesc(
 		MetricPrefix+"info",
 		"Contains information about the Flower Care device.",
-		append(varLabelNames, "version"), nil)
+		append(varLabelNames, "version"), nil) // Ensure "version" is still appended if needed
 	batteryDesc = prometheus.NewDesc(
 		MetricPrefix+"battery_percent",
 		"Battery level in percent.",
@@ -88,6 +96,12 @@ func (c *Flowercare) collectSensor(ch chan<- prometheus.Metric, s config.Sensor)
 	labels := []string{
 		s.MacAddress,
 		s.Name,
+		strconv.Itoa(s.MaxSoilMoist), // Convert int to string
+		strconv.Itoa(s.MinSoilMoist), // Convert int to string
+		strconv.Itoa(s.MaxSoilEc),    // Convert int to string
+		strconv.Itoa(s.MinSoilEc),    // Convert int to string
+		strconv.Itoa(s.MaxLightLux),  // Convert int to string
+		strconv.Itoa(s.MinLightLux),  // Convert int to string
 	}
 
 	data, err := c.Source(s.MacAddress)
