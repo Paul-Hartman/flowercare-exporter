@@ -155,11 +155,13 @@ func Parse(log logrus.FieldLogger) (Config, error) {
 			Factor:      2,
 		},
 	}
+
 	// if sensordir flag is passed in at runtime, use readSensorsFromDir to populate results.Sensors with that directory's contents
 	// otherwise use the sensors passed in using the -s flag
-	sensordir := pflag.String("sensordir", "d", "Directory containing sensor JSON files.")
-	if sensordir != nil {
-		sensors, err := readSensorsFromDir(*sensordir)
+	sensordir := ""
+	pflag.StringVarP(&sensordir, "sensordir", "d", sensordir, "Directory containing sensor JSON files.")
+	if len(sensordir) == 0 {
+		sensors, err := readSensorsFromDir(sensordir)
 		if err != nil {
 			log.Fatalf("Error reading sensors from directory: %s", err)
 		}
