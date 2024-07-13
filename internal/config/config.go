@@ -177,7 +177,7 @@ func Parse(log logrus.FieldLogger) (Config, error) {
 		LogLevel:        LogLevel(logrus.InfoLevel),
 		ListenAddr:      ":9294",
 		Device:          "hci0",
-		SensorDir:       "internal/config/sensorData",
+		SensorDir:       "sensorData",
 		RefreshDuration: 2 * time.Minute,
 		RefreshTimeout:  time.Minute,
 		StaleDuration:   5 * time.Minute,
