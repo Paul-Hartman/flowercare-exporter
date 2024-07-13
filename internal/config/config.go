@@ -160,7 +160,7 @@ func Parse(log logrus.FieldLogger) (Config, error) {
 	// otherwise use the sensors passed in using the -s flag
 	sensordir := ""
 	pflag.StringVarP(&sensordir, "sensordir", "d", sensordir, "Directory containing sensor JSON files.")
-	if len(sensordir) == 0 {
+	if len(sensordir) != 0 {
 		sensors, err := readSensorsFromDir(sensordir)
 		if err != nil {
 			log.Fatalf("Error reading sensors from directory: %s", err)
