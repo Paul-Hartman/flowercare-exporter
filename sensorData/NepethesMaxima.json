@@ -2,6 +2,7 @@
     "pid": "nepenthes 'rebecca soper'",
     "sensor" : "5C:85:7E:12:E0:42",
     "name": "Nepenthes Maxima",
+    "type": "Swamp",
     "basic": {
         "floral_language": "",
         "origin": "EuroAsia Tropical areas",
