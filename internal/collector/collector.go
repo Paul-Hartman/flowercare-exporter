@@ -23,6 +23,7 @@ var (
 	varLabelNames = []string{
 		"macaddress",
 		"name",
+		"type",
 		"max_soil_moist",
 		"min_soil_moist",
 		"max_soil_ec",
@@ -96,6 +97,7 @@ func (c *Flowercare) collectSensor(ch chan<- prometheus.Metric, s config.Sensor)
 	labels := []string{
 		s.MacAddress,
 		s.Name,
+		s.Type,
 		strconv.Itoa(s.MaxSoilMoist), // Convert int to string
 		strconv.Itoa(s.MinSoilMoist), // Convert int to string
 		strconv.Itoa(s.MaxSoilEc),    // Convert int to string
