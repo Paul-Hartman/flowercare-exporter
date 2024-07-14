@@ -44,6 +44,7 @@ func (s *SensorList) Set(value string) error {
 type Sensor struct {
 	Name         string `json:"name"`
 	MacAddress   string `json:"sensor"`
+	Type         string `json:"type"`
 	MaxSoilMoist int    `json:"-"`
 	MinSoilMoist int    `json:"-"`
 	MaxSoilEc    int    `json:"-"`
@@ -56,6 +57,7 @@ func (s *Sensor) UnmarshalJSON(data []byte) error {
 	var raw struct {
 		Name       string `json:"name"`
 		MacAddress string `json:"sensor"`
+		Type       string `json:"type"`
 		Parameter  struct {
 			MaxSoilMoist int `json:"max_soil_moist"`
 			MinSoilMoist int `json:"min_soil_moist"`
@@ -65,12 +67,15 @@ func (s *Sensor) UnmarshalJSON(data []byte) error {
 			MinLightLux  int `json:"min_light_lux"`
 		} `json:"parameter"`
 	}
+	// Set the default value for Type before unmarshalling
+	raw.Type = "normie"
 	if err := json.Unmarshal(data, &raw); err != nil {
 		return err
 	}
 
 	s.Name = raw.Name
 	s.MacAddress = raw.MacAddress
+	s.Type = raw.Type // Assign the Type, which will be "normie" if not provided in JSON
 	s.MaxSoilMoist = raw.Parameter.MaxSoilMoist
 	s.MinSoilMoist = raw.Parameter.MinSoilMoist
 	s.MaxSoilEc = raw.Parameter.MaxSoilEc
@@ -80,7 +85,6 @@ func (s *Sensor) UnmarshalJSON(data []byte) error {
 
 	return nil
 }
-
 func readSensorsFromDir(dirPath string, log logrus.FieldLogger) ([]Sensor, error) {
 	var sensors []Sensor
 	entries, err := os.ReadDir(dirPath)
